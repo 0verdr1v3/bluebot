@@ -122,12 +122,11 @@ identical clone, so raw input events replay 1:1.
   DRM-heavy streaming) will still refuse to run on a virtual device. That's a
   limitation of emulators in general, not a bug here.
 
-## WSL2-on-Windows notes
+## Windows (WSL2)
 
-The stock WSL2 kernel does not ship binderfs. You'll need to build a WSL2 kernel
-with `CONFIG_ANDROID_BINDER_IPC=y` and `CONFIG_ANDROID_BINDERFS=y`, then point
-`.wslconfig` at it. A plain Linux cloud VM avoids this and is the easier path if
-you just want it working.
+The stock WSL2 kernel doesn't ship binderfs, so there's a one-time custom-kernel
+step. Full walkthrough: **[docs/WINDOWS.md](docs/WINDOWS.md)**. A plain Linux
+cloud VM avoids this entirely and is the easier path if you just want it working.
 
 ## Scope / use
 
