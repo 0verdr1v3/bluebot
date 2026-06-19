@@ -1,0 +1,8 @@
+# redroid per-instance Android data (large, runtime-only)
+/data/
+# local APKs you push to the instances
+*.apk
+
+# python cache
+__pycache__/
+*.pyc
