@@ -90,6 +90,13 @@ services:
     # docker network (service name : internal port 5555).
     environment:
       DEVICES: "android-1:5555 android-2:5555 android-3:5555 android-4:5555"
+    healthcheck:
+      # node is already in the image; avoids needing curl/wget.
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8000',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     depends_on:
       - android-1
       - android-2

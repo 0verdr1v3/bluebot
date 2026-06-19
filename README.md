@@ -36,24 +36,41 @@ Android apps (Google Play can be added — see "Google Play" below).
 - **Docker** + the Compose plugin.
 - A few GB RAM per panel; more is better.
 
-## Quick start
+## Quick start (one command)
 
 ```bash
-# 1. Prepare the host (loads the binder kernel module, persists it).
-./scripts/setup_host.sh
-
-# 2. (Optional) choose how many instances and which Android version.
-python3 scripts/gen_compose.py --count 4 --android 11.0.0
-
-# 3. Bring it up (first run builds the viewer image; takes a few minutes).
-docker compose up -d
-
-# 4. Open the viewer.
-#    http://localhost:8000   (or http://<server-ip>:8000 for a cloud VM)
+cp .env.example .env        # optional: set PANELS, ANDROID_VERSION, VIEWER_PORT
+./deploy.sh                 # prepare host -> preflight -> build -> launch
 ```
 
-The viewer connects to each instance automatically; open a device from the list
-to interact with it. Open several to view multiple at once.
+`deploy.sh` loads the `binder` kernel module, runs a preflight check that fails
+fast with a clear reason if something's missing, generates the compose file,
+builds the viewer, starts everything, and waits until the viewer is healthy —
+then prints the URL (e.g. `http://localhost:8000`).
+
+Open a device from the list to interact with it; open several to view multiple
+at once.
+
+### Day-to-day (Makefile)
+
+```bash
+make deploy            # same as ./deploy.sh
+make doctor            # preflight checks only
+make ps                # container + health status
+make logs              # follow viewer logs
+make scale PANELS=8    # regenerate for N panels and roll the stack
+make mirror            # load test (mirror panel #1 to the rest)
+make down              # stop
+make clean             # stop + delete per-instance Android data
+```
+
+### Manual (if you'd rather not use deploy.sh)
+
+```bash
+./scripts/setup_host.sh                       # load binder
+python3 scripts/gen_compose.py --count 4      # generate compose
+docker compose up -d --build                  # launch
+```
 
 ## Installing apps
 

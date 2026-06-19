@@ -44,11 +44,18 @@ VIEWER_TMPL = """  viewer:
     build: ./ws-scrcpy
     container_name: ws-scrcpy
     ports:
-      - "8000:8000"
+      - "{port}:8000"
     # The viewer adb-connects to each redroid instance over the internal
     # docker network (service name : internal port 5555).
     environment:
       DEVICES: "{devices}"
+    healthcheck:
+      # node is already in the image; avoids needing curl/wget.
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8000',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     depends_on:
 {deps}
     restart: unless-stopped
@@ -62,6 +69,7 @@ def main():
     p.add_argument("--width", type=int, default=720)
     p.add_argument("--height", type=int, default=1280)
     p.add_argument("--dpi", type=int, default=320)
+    p.add_argument("--port", type=int, default=8000, help="host port for the web viewer")
     p.add_argument("-o", "--out", default="docker-compose.yml")
     args = p.parse_args()
 
@@ -86,7 +94,7 @@ def main():
         )
         deps.append(f"      - android-{i}")
         devices.append(f"android-{i}:5555")  # internal docker-network address
-    blocks.append(VIEWER_TMPL.format(deps="\n".join(deps), devices=" ".join(devices)))
+    blocks.append(VIEWER_TMPL.format(deps="\n".join(deps), devices=" ".join(devices), port=args.port))
 
     with open(args.out, "w") as f:
         f.write("\n".join(blocks))
