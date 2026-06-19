@@ -21,4 +21,7 @@ echo "==> Devices visible to the viewer:"
 adb devices
 
 echo "==> Starting ws-scrcpy on :8000"
-exec node dist/index.js
+# Run the built server via the project's own start script (resolves native
+# deps from /app/node_modules); avoids hardcoding the entry filename.
+cd /app/dist
+exec npm start

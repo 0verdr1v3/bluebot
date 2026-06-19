@@ -1,9 +1,14 @@
 # bluebot — a browser panel of Android instances
 
-A self-hosted alternative to BlueStacks built from open-source parts: a grid of
-independent **Android** instances you view and control as **panels in your web
-browser**. Each panel is its own isolated Android device that can run regular
-Android apps, including (with the GApps image) the Google Play Store.
+A self-hosted alternative to BlueStacks built from open-source parts:
+independent **Android** instances you view and control from your **web
+browser**. Each instance is its own isolated Android device that can run regular
+Android apps (Google Play can be added — see "Google Play" below).
+
+> **On the "panel grid":** the viewer (ws-scrcpy) shows a **device list** and
+> opens each device's live screen in its own view. To get a literal tiled wall
+> of screens, open several devices in separate browser windows/tabs and arrange
+> them. A custom auto-tiled grid page is a small add-on — ask if you want it.
 
 ```
 ┌─────────── your browser : http://localhost:8000 ───────────┐
@@ -19,7 +24,7 @@ Android apps, including (with the GApps image) the Google Play Store.
 | Piece | Role |
 |-------|------|
 | [**redroid**](https://github.com/remote-android/redroid-doc) | Real Android running in a Docker container. One container = one panel. |
-| [**ws-scrcpy**](https://github.com/NetrisTV/ws-scrcpy) | Streams every device to the browser and renders the panel grid. |
+| [**ws-scrcpy**](https://github.com/NetrisTV/ws-scrcpy) | Streams the devices to the browser (device list + per-device live screen). |
 | **Docker Compose** | Wires N Android instances + the viewer together. |
 | `scripts/gen_compose.py` | Regenerates `docker-compose.yml` for any number of panels. |
 
@@ -37,27 +42,22 @@ Android apps, including (with the GApps image) the Google Play Store.
 # 1. Prepare the host (loads the binder kernel module, persists it).
 ./scripts/setup_host.sh
 
-# 2. (Optional) choose how many panels and which Android version.
-python3 scripts/gen_compose.py --count 4 --android 11.0.0      # vanilla
-# python3 scripts/gen_compose.py --count 6 --android 11.0.0 --gapps  # with Play Store
+# 2. (Optional) choose how many instances and which Android version.
+python3 scripts/gen_compose.py --count 4 --android 11.0.0
 
 # 3. Bring it up (first run builds the viewer image; takes a few minutes).
 docker compose up -d
 
-# 4. Open the panel grid.
+# 4. Open the viewer.
 #    http://localhost:8000   (or http://<server-ip>:8000 for a cloud VM)
 ```
 
-The viewer connects to each instance automatically. Click a panel to interact;
-multiple panels stream at once.
+The viewer connects to each instance automatically; open a device from the list
+to interact with it. Open several to view multiple at once.
 
 ## Installing apps
 
-**With the Google Play Store** (`--gapps` image): open the Play Store inside a
-panel, sign in, install apps normally. Note Play may require you to register the
-device — see "Google Play & Play Integrity" below.
-
-**Sideloading an APK** from your own machine:
+**Sideloading an APK** from your own machine (no Google Play needed):
 
 ```bash
 ./scripts/connect.sh                          # connect host adb to the panels
@@ -89,18 +89,21 @@ on all the others. Add `--count` panels with `gen_compose.py` and repeat to find
 where your machine tops out. This works because every redroid instance is an
 identical clone, so raw input events replay 1:1.
 
-## Google Play & Play Integrity — read this
+## Google Play — read this
 
-- The Play Store / Play Services are **Google's proprietary software**. This repo
-  does not bundle them; the `--gapps` redroid image includes the open
-  integration, and you sign in with your own Google account.
-- Many apps now run **Play Integrity** checks. On an emulator you may need to
+- **redroid's official images do NOT include Google Play / GApps.** There is no
+  `-gapps` image tag; don't expect the Play Store to be present out of the box.
+- To add it, install GApps (or MicroG) into a running instance after boot. The
+  redroid project documents the supported approaches (OpenGApps / MindTheGapps
+  per Android version) here:
+  <https://github.com/remote-android/redroid-doc#google-apps-gapps>
+- The Play Store / Play Services are **Google's proprietary software** — this
+  repo can't bundle or redistribute them.
+- Even once installed, many apps run **Play Integrity** checks. You may need to
   register the device's Google Services Framework (GSF) ID at
-  <https://www.google.com/android/uncertified> for Play to work, and some apps
-  (banking, DRM-heavy streaming) will still refuse to run on a virtual device.
-  That's a limitation of emulators in general, not a bug here.
-- **`redroid` gapps image tags change over time.** If `--gapps` fails to pull,
-  check the current tag at <https://hub.docker.com/r/redroid/redroid/tags>.
+  <https://www.google.com/android/uncertified>, and some apps (banking,
+  DRM-heavy streaming) will still refuse to run on a virtual device. That's a
+  limitation of emulators in general, not a bug here.
 
 ## WSL2-on-Windows notes
 

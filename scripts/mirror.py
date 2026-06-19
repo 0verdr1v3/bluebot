@@ -105,10 +105,13 @@ def main():
             except ValueError:
                 continue
             cmd = f"sendevent {touch} {t} {c} {v}\n"
-            for sh in shells.values():
-                if sh.stdin:
-                    sh.stdin.write(cmd)
-                    sh.stdin.flush()
+            for serial, sh in shells.items():
+                if sh.stdin and sh.poll() is None:
+                    try:
+                        sh.stdin.write(cmd)
+                        sh.stdin.flush()
+                    except (BrokenPipeError, ValueError):
+                        print(f"\n[warn] lost connection to {serial}; skipping it")
             sent += 1
             if sent % 200 == 0:
                 print(f"  …forwarded {sent} events", end="\r", flush=True)

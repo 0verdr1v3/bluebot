@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Generate a docker-compose.yml with N redroid Android instances plus a
-ws-scrcpy web viewer that shows them all as a panel grid in the browser.
+ws-scrcpy web viewer (device list + a live screen per device) in the browser.
 
 Usage:
-    python3 scripts/gen_compose.py --count 4 --android 11.0.0 [--gapps]
+    python3 scripts/gen_compose.py --count 4 --android 11.0.0
 
 Then:
     docker compose up -d
@@ -58,18 +58,17 @@ VIEWER_TMPL = """  viewer:
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--count", type=int, default=4, help="number of Android panels")
-    p.add_argument("--android", default="11.0.0", help="redroid Android version tag")
-    p.add_argument("--gapps", action="store_true", help="use the Google-apps image variant")
+    p.add_argument("--android", default="11.0.0", help="redroid Android version (e.g. 11.0.0, 12.0.0, 13.0.0)")
     p.add_argument("--width", type=int, default=720)
     p.add_argument("--height", type=int, default=1280)
     p.add_argument("--dpi", type=int, default=320)
     p.add_argument("-o", "--out", default="docker-compose.yml")
     args = p.parse_args()
 
-    # redroid gapps images are published under a separate tag suffix. Tags move
-    # over time — verify the current one at https://hub.docker.com/r/redroid/redroid/tags
-    suffix = "_gapps-latest" if args.gapps else "-latest"
-    image = f"redroid/redroid:{args.android}{suffix}"
+    # redroid's official images do NOT bundle Google Play / GApps — install
+    # those into a running instance afterwards (see README). Verify the tag at
+    # https://hub.docker.com/r/redroid/redroid/tags
+    image = f"redroid/redroid:{args.android}-latest"
 
     blocks = [HEADER]
     deps = []
