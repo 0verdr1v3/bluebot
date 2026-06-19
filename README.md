@@ -72,6 +72,23 @@ python3 scripts/gen_compose.py --count 8
 docker compose up -d
 ```
 
+## Load testing: mirror one panel to all the others
+
+To check how many panels your host can actually drive at once, mirror panel #1's
+touch input to every other panel in real time and watch resource use:
+
+```bash
+./scripts/connect.sh          # host adb sees every panel
+python3 scripts/mirror.py     # panel #1 = master, broadcast to the rest
+# in a second terminal:
+./scripts/stats.sh            # live CPU/mem per panel
+```
+
+Drive panel #1 in the browser (scroll, tap, open an app); the same input replays
+on all the others. Add `--count` panels with `gen_compose.py` and repeat to find
+where your machine tops out. This works because every redroid instance is an
+identical clone, so raw input events replay 1:1.
+
 ## Google Play & Play Integrity — read this
 
 - The Play Store / Play Services are **Google's proprietary software**. This repo
