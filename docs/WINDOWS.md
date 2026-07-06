@@ -6,27 +6,33 @@ the Android `binder` driver, so a small custom kernel is built **once**.
 
 ## Automatic install (recommended)
 
-Download **[`installer/install.bat`](../installer/install.bat)** and
-double-click it (it self-elevates to Administrator). It does everything:
+Because this repo is **private**, the installer runs from a local copy — you
+download the repo once through your logged-in browser, then run the installer
+from the extracted files (nothing is fetched from the private repo).
 
-1. Enables WSL2 + installs Ubuntu (reboots once if WSL was not already on —
-   just run `install.bat` again after the reboot to resume).
-2. Installs Docker inside WSL.
-3. Builds a `binder`-enabled WSL2 kernel and points `.wslconfig` at it.
-4. Clones the repo and runs `deploy.sh`.
-5. Drops a **Bluebot** launcher on your Desktop that starts the panels and opens
-   the viewer at `http://localhost:8000`.
+1. On GitHub, open the repo on this branch → green **Code** button →
+   **Download ZIP**.
+2. **Extract** the ZIP (right-click → Extract All). You'll get a `bluebot-…`
+   folder.
+3. Open that folder, go into **`installer\`**, and **double-click `install.bat`**
+   (it self-elevates to Administrator — click **Yes**).
+
+It does everything from there:
+
+- Enables WSL2 + installs Ubuntu (reboots once if WSL was not already on — just
+  double-click `install.bat` again after the reboot to resume).
+- Installs Docker inside WSL.
+- Copies the repo into WSL, builds a `binder`-enabled WSL2 kernel, points
+  `.wslconfig` at it.
+- Runs `deploy.sh`.
+- Drops a **Bluebot** launcher on your Desktop that starts the panels and opens
+  the viewer at `http://localhost:8000`.
 
 The kernel build is the slow step (20–40 min). The installer is idempotent —
 re-running skips work that's already done, so it's safe after an interruption.
 
-> One-liner alternative (Administrator PowerShell):
-> ```powershell
-> irm https://raw.githubusercontent.com/0verdr1v3/bluebot/claude/dreamy-thompson-2rkd15/installer/Install-Bluebot.ps1 | iex
-> ```
-
 > Prefer no kernel build at all? A cheap Linux **cloud VM** needs none of this:
-> clone, `./deploy.sh`, open the printed URL in your Windows browser.
+> copy the repo up, run `./deploy.sh`, open the printed URL in your browser.
 
 ---
 
@@ -114,11 +120,25 @@ zcat /proc/config.gz | grep -i binder      # should show the CONFIG_ANDROID_BIND
 
 ## 5. Deploy
 
-Back in Ubuntu/WSL:
+Get the repo into WSL. The repo is **private**, so anonymous `git clone` won't
+work — use one of:
+
+- **From the ZIP you already downloaded** (accessible in WSL under `/mnt/c/...`):
+  ```bash
+  cp -r /mnt/c/Users/<YOU>/Downloads/bluebot-<branch> ~/bluebot
+  ```
+- **Or authenticated clone** (GitHub username + a personal access token as the
+  password):
+  ```bash
+  git clone -b claude/dreamy-thompson-2rkd15 https://github.com/0verdr1v3/bluebot.git ~/bluebot
+  ```
+
+Then:
 
 ```bash
-git clone -b claude/dreamy-thompson-2rkd15 https://github.com/0verdr1v3/bluebot.git
-cd bluebot
+cd ~/bluebot
+# normalize line endings if the files came from Windows, then deploy
+find . -name '*.sh' -exec sed -i 's/\r$//' {} + ; sed -i 's/\r$//' deploy.sh
 cp .env.example .env
 ./deploy.sh
 ```

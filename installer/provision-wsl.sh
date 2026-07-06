@@ -10,6 +10,7 @@ PHASE=""
 KERNEL_OUT=""
 REPO_URL="https://github.com/0verdr1v3/bluebot.git"
 REPO_BRANCH="claude/dreamy-thompson-2rkd15"
+SKIP_CLONE=0   # set when the repo was already copied into ~/bluebot (private repo)
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -17,6 +18,7 @@ while [ $# -gt 0 ]; do
     --kernel-out) KERNEL_OUT="${2:-}"; shift 2;;
     --branch)     REPO_BRANCH="${2:-}"; shift 2;;
     --repo)       REPO_URL="${2:-}"; shift 2;;
+    --skip-clone) SKIP_CLONE=1; shift;;
     *) echo "unknown arg: $1" >&2; exit 2;;
   esac
 done
@@ -97,7 +99,12 @@ build_kernel() {
 case "$PHASE" in
   build)
     ensure_docker_installed
-    clone_repo
+    if [ "$SKIP_CLONE" -eq 1 ]; then
+      [ -d "$HOME/bluebot" ] || fail "--skip-clone set but ~/bluebot not found (installer should have copied it)."
+      log "Using repo already present at ~/bluebot (skipping clone)."
+    else
+      clone_repo
+    fi
     if [ -n "$KERNEL_OUT" ] && [ "$KERNEL_OUT" != "skip" ]; then
       build_kernel
     else

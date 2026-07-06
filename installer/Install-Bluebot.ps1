@@ -14,8 +14,6 @@
 [CmdletBinding()]
 param(
   [string]$Distro    = "Ubuntu",
-  [string]$Branch    = "claude/dreamy-thompson-2rkd15",
-  [string]$RepoUrl   = "https://github.com/0verdr1v3/bluebot.git",
   [int]$ViewerPort   = 8000,
   [switch]$SkipKernel  # for hosts that already have a binder kernel
 )
@@ -31,10 +29,24 @@ $admin = ([Security.Principal.WindowsPrincipal] `
   ).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)
 if (-not $admin) { Die "Please run this in an Administrator PowerShell." }
 
-$winUser   = $env:USERNAME
-$kernelWin = "C:\Users\$winUser\bzImage-bluebot"
-$kernelWsl = "/mnt/c/Users/$winUser/bzImage-bluebot"
-$wslConfig = "C:\Users\$winUser\.wslconfig"
+# This installer runs from a LOCAL copy of the repo (works even though the repo
+# is private). The repo root is the parent of this installer\ folder.
+$RepoRootWin = Split-Path -Parent $PSScriptRoot
+if (-not (Test-Path (Join-Path $RepoRootWin "deploy.sh"))) {
+  Die "Can't find the repo. Run this from the extracted repo's installer\ folder (deploy.sh not found beside it)."
+}
+
+function ConvertTo-WslPath($winPath) {
+  $full = (Resolve-Path $winPath).Path
+  $drive = $full.Substring(0,1).ToLower()
+  $rest  = $full.Substring(2) -replace '\\','/'
+  return "/mnt/$drive$rest"
+}
+
+$winUser     = $env:USERNAME
+$kernelWin   = "C:\Users\$winUser\bzImage-bluebot"
+$kernelWsl   = "/mnt/c/Users/$winUser/bzImage-bluebot"
+$wslConfig   = "C:\Users\$winUser\.wslconfig"
 
 # --- 1. WSL present? ---
 Info "Checking WSL..."
@@ -66,18 +78,19 @@ function Wsl($cmd) {
   if ($LASTEXITCODE -ne 0) { Die "WSL step failed (exit $LASTEXITCODE): $cmd" }
 }
 
-# --- 3. get the provisioner into WSL (clone happens in build phase) ---
-$rawBase = "https://raw.githubusercontent.com/0verdr1v3/bluebot/$Branch/installer"
-Info "Fetching provisioner into WSL..."
-Wsl "mkdir -p ~/.bluebot && curl -fsSL '$rawBase/provision-wsl.sh' -o ~/.bluebot/provision-wsl.sh && chmod +x ~/.bluebot/provision-wsl.sh"
+# --- 3. copy the local repo into WSL's filesystem (fast + avoids CRLF issues) ---
+$RepoRootWsl = ConvertTo-WslPath $RepoRootWin
+Info "Copying the repo into WSL (~/bluebot)..."
+# Copy, strip any CRLF from shell scripts, and make them executable.
+Wsl "rm -rf ~/bluebot && cp -r '$RepoRootWsl' ~/bluebot && rm -rf ~/bluebot/data && find ~/bluebot -type f -name '*.sh' -print0 | xargs -0 sed -i 's/\r`$//' && sed -i 's/\r`$//' ~/bluebot/deploy.sh && chmod +x ~/bluebot/deploy.sh ~/bluebot/scripts/*.sh ~/bluebot/installer/*.sh"
 
-# --- 4. build phase: docker install, repo clone, kernel build ---
+# --- 4. build phase: docker install + kernel build (repo already present) ---
 if ($SkipKernel) {
   Info "Skipping kernel build (-SkipKernel); assuming binder is available."
-  Wsl "bash ~/.bluebot/provision-wsl.sh --phase build --kernel-out 'skip' --branch '$Branch' --repo '$RepoUrl'"
+  Wsl "bash ~/bluebot/installer/provision-wsl.sh --phase build --skip-clone --kernel-out 'skip'"
 } else {
-  Info "Build phase in WSL (Docker + repo + binder kernel). The kernel build is slow..."
-  Wsl "bash ~/.bluebot/provision-wsl.sh --phase build --kernel-out '$kernelWsl' --branch '$Branch' --repo '$RepoUrl'"
+  Info "Build phase in WSL (Docker + binder kernel). The kernel build is slow..."
+  Wsl "bash ~/bluebot/installer/provision-wsl.sh --phase build --skip-clone --kernel-out '$kernelWsl'"
 
   # --- 5. point .wslconfig at the new kernel ---
   if (-not (Test-Path $kernelWin)) { Die "Kernel build reported success but $kernelWin is missing." }
@@ -101,7 +114,7 @@ Start-Sleep -Seconds 6
 
 # --- 7. deploy the stack ---
 Info "Deploying the Android panel stack (redroid + viewer)..."
-Wsl "bash ~/.bluebot/provision-wsl.sh --phase deploy"
+Wsl "bash ~/bluebot/installer/provision-wsl.sh --phase deploy"
 
 # --- 8. desktop launcher (starts the stack, waits, opens the browser) ---
 Info "Creating desktop launcher..."

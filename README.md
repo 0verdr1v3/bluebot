@@ -124,8 +124,12 @@ identical clone, so raw input events replay 1:1.
 
 ## Windows (WSL2)
 
-Download **[`installer/install.bat`](installer/install.bat)** and double-click it
-— it self-elevates and does the whole setup (WSL2, Docker, a binder-enabled
+This repo is private, so the installer runs from a local copy:
+
+1. GitHub → **Code** → **Download ZIP** (on this branch), then extract it.
+2. Open the extracted folder → **`installer\`** → double-click **`install.bat`**.
+
+It self-elevates and does the whole setup (WSL2, Docker, a binder-enabled
 kernel, deploy, and a Desktop launcher). Full details and a manual fallback:
 **[docs/WINDOWS.md](docs/WINDOWS.md)**. A plain Linux cloud VM avoids the
 custom-kernel step entirely if you'd rather go that route.
