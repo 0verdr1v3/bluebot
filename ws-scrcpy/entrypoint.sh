@@ -9,7 +9,7 @@ adb start-server >/dev/null 2>&1 || true
 for dev in ${DEVICES:-}; do
   echo "==> adb connect ${dev}"
   # redroid can take a moment to boot; retry a few times.
-  for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
     if adb connect "${dev}" | grep -qE "connected|already"; then
       break
     fi

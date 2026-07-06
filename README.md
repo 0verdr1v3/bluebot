@@ -124,9 +124,11 @@ identical clone, so raw input events replay 1:1.
 
 ## Windows (WSL2)
 
-The stock WSL2 kernel doesn't ship binderfs, so there's a one-time custom-kernel
-step. Full walkthrough: **[docs/WINDOWS.md](docs/WINDOWS.md)**. A plain Linux
-cloud VM avoids this entirely and is the easier path if you just want it working.
+Download **[`installer/install.bat`](installer/install.bat)** and double-click it
+— it self-elevates and does the whole setup (WSL2, Docker, a binder-enabled
+kernel, deploy, and a Desktop launcher). Full details and a manual fallback:
+**[docs/WINDOWS.md](docs/WINDOWS.md)**. A plain Linux cloud VM avoids the
+custom-kernel step entirely if you'd rather go that route.
 
 ## Scope / use
 

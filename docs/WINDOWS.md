@@ -1,15 +1,36 @@
 # Running bluebot on Windows (WSL2)
 
 redroid runs **real Android on the Linux kernel**, so on Windows it must run
-inside **WSL2**. The only hard part is that the default WSL2 kernel does not
-include the Android `binder` driver — you build a small custom kernel **once**,
-point WSL at it, and from then on it's the same `./deploy.sh` as Linux.
+inside **WSL2**. The one hard requirement is that the default WSL2 kernel lacks
+the Android `binder` driver, so a small custom kernel is built **once**.
 
-> Easier alternative: a cheap Linux cloud VM needs none of this. Clone, run
-> `./deploy.sh`, open the printed URL in your Windows browser. Use the steps
-> below only if you specifically want it on the PC itself.
+## Automatic install (recommended)
+
+Download **[`installer/install.bat`](../installer/install.bat)** and
+double-click it (it self-elevates to Administrator). It does everything:
+
+1. Enables WSL2 + installs Ubuntu (reboots once if WSL was not already on —
+   just run `install.bat` again after the reboot to resume).
+2. Installs Docker inside WSL.
+3. Builds a `binder`-enabled WSL2 kernel and points `.wslconfig` at it.
+4. Clones the repo and runs `deploy.sh`.
+5. Drops a **Bluebot** launcher on your Desktop that starts the panels and opens
+   the viewer at `http://localhost:8000`.
+
+The kernel build is the slow step (20–40 min). The installer is idempotent —
+re-running skips work that's already done, so it's safe after an interruption.
+
+> One-liner alternative (Administrator PowerShell):
+> ```powershell
+> irm https://raw.githubusercontent.com/0verdr1v3/bluebot/claude/dreamy-thompson-2rkd15/installer/Install-Bluebot.ps1 | iex
+> ```
+
+> Prefer no kernel build at all? A cheap Linux **cloud VM** needs none of this:
+> clone, `./deploy.sh`, open the printed URL in your Windows browser.
 
 ---
+
+## Manual install (if you'd rather do it yourself, or the installer fails)
 
 ## 1. Install WSL2
 
