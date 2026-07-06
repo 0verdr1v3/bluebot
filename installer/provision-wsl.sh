@@ -59,6 +59,16 @@ build_kernel() {
   if [ -f "$HOME/.bluebot-kernel-built" ] && [ -f "$KERNEL_OUT" ]; then
     log "binder kernel already built ($KERNEL_OUT); skipping."; return
   fi
+
+  # Need ~25GB free for the kernel build + Docker images that follow.
+  local free_gb
+  free_gb=$(df -BG --output=avail "$HOME" 2>/dev/null | tail -1 | tr -dc '0-9')
+  if [ -n "$free_gb" ] && [ "$free_gb" -lt 25 ]; then
+    fail "Only ${free_gb}GB free in WSL, but the kernel build + Docker need ~25GB.
+   Free up space on your Windows C: drive (WSL shares it), then re-run the installer.
+   Tip: 'docker system prune -af' in WSL, and empty your Windows Recycle Bin."
+  fi
+
   log "Installing kernel build dependencies..."
   sudo apt-get update -y
   sudo apt-get install -y build-essential flex bison libssl-dev libelf-dev bc dwarves git cpio
@@ -94,6 +104,12 @@ build_kernel() {
   cp arch/x86/boot/bzImage "$KERNEL_OUT"
   touch "$HOME/.bluebot-kernel-built"
   log "binder kernel installed at $KERNEL_OUT"
+
+  # Reclaim the ~15GB of build objects now that we have the kernel — important
+  # on storage-constrained machines (the rest of setup still needs disk).
+  log "Cleaning up kernel build tree to free space..."
+  cd "$HOME"
+  rm -rf "$src"
 }
 
 case "$PHASE" in
