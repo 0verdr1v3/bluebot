@@ -60,13 +60,14 @@ build_kernel() {
     log "binder kernel already built ($KERNEL_OUT); skipping."; return
   fi
 
-  # Need ~25GB free for the kernel build + Docker images that follow.
+  # With debug info off, the kernel build peaks ~6GB and its source is deleted
+  # afterward; Docker then needs ~8GB. Require 14GB free as a safe floor.
   local free_gb
   free_gb=$(df -BG --output=avail "$HOME" 2>/dev/null | tail -1 | tr -dc '0-9')
-  if [ -n "$free_gb" ] && [ "$free_gb" -lt 25 ]; then
-    fail "Only ${free_gb}GB free in WSL, but the kernel build + Docker need ~25GB.
+  if [ -n "$free_gb" ] && [ "$free_gb" -lt 14 ]; then
+    fail "Only ${free_gb}GB free in WSL, but setup needs ~14GB.
    Free up space on your Windows C: drive (WSL shares it), then re-run the installer.
-   Tip: 'docker system prune -af' in WSL, and empty your Windows Recycle Bin."
+   Tip: empty your Windows Recycle Bin and run Disk Cleanup."
   fi
 
   log "Installing kernel build dependencies..."
@@ -88,11 +89,17 @@ build_kernel() {
   cp Microsoft/config-wsl .config
   # Static devices (/dev/binder,hwbinder,vndbinder) appear at boot; binderfs on
   # as a fallback. ashmem is intentionally omitted (redroid 11+ uses memfd).
+  # Debug info is turned OFF — it more than halves build size and time, and
+  # redroid doesn't need it. Big win on storage-constrained machines.
   {
     echo 'CONFIG_ANDROID=y'
     echo 'CONFIG_ANDROID_BINDER_IPC=y'
     echo 'CONFIG_ANDROID_BINDERFS=y'
     echo 'CONFIG_ANDROID_BINDER_DEVICES="binder,hwbinder,vndbinder"'
+    echo '# CONFIG_DEBUG_INFO_BTF is not set'
+    echo '# CONFIG_DEBUG_INFO_DWARF4 is not set'
+    echo '# CONFIG_DEBUG_INFO_DWARF5 is not set'
+    echo 'CONFIG_DEBUG_INFO_NONE=y'
   } >> .config
   make olddefconfig
 
